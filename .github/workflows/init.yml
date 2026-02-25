@@ -75,7 +75,7 @@ jobs:
             cat > package.json <<'JSON'
           {
             "name": "tailwind-project",
-            "version": "1.0.0",
+            "version": "4.2.1",
             "private": true,
             "type": "module",
             "scripts": {
