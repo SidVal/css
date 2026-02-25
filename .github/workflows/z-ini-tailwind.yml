@@ -46,11 +46,12 @@ jobs:
         run: npm install -D tailwindcss postcss autoprefixer
 
       # PASO 4: Crear carpetas y archivos base
-      - name: Scaffold Project
+      - name: Scaffold Project (v4)
         run: |
           mkdir -p src dist
-          [ -f src/styles.css ] || echo "@tailwind base; @tailwind components; @tailwind utilities;" > src/styles.css
-          [ -f tailwind.config.js ] || npx tailwindcss init -p
+          # En v4, solo necesitas esta línea en tu CSS
+          [ -f src/styles.css ] || echo '@import "tailwindcss";' > src/styles.css
+          # No ejecutes 'npx tailwindcss init', no es necesario
 
       # PASO 5: Commit y Push de la base
       - name: Push Initial Setup
