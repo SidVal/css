@@ -6,154 +6,57 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  group: bootstrap-tailwind
-  cancel-in-progress: false
-
 jobs:
-  ini-tailwind:
+  bootstrap:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          # El caché dará un warning la primera vez (normal en repos vacíos)
-
-      - name: Initialize Project Structure
+      # PASO 1: Crear el corazón del proyecto (package.json) de forma aislada
+      - name: Create package.json
         shell: bash
         run: |
-          set -euo pipefail
-
-          # 1. Crear package.json si no existe
-          if [ ! -f package.json ]; then
-            echo "📦 Creando package.json..."
-            cat > package.json <<'JSON'
+          if [ -f package.json ]; then
+            echo "El archivo ya existe. Abortando para no sobrescribir."
+            exit 0
+          fi
+          
+          cat > package.json <<'JSON'
           {
-            "name": "tailwind-static-site",
-            "version": "0.1.0",
+            "name": "tailwind-project",
+            "version": "1.0.0",
             "private": true,
             "type": "module",
             "scripts": {
               "dev": "tailwindcss -i ./src/styles.css -o ./dist/assets/app.css --watch",
-              "build": "rm -rf dist && mkdir -p dist/assets && cp src/index.html dist/ && npx tailwindcss -i ./src/styles.css -o ./dist/assets/app.css --minify",
-              "preview": "npx serve dist"
+              "build": "tailwindcss -i ./src/styles.css -o ./dist/assets/app.css --minify"
             }
           }
           JSON
-          else
-            echo "⚠️ package.json ya existe, omitiendo..."
-          fi
 
-          # 2. Estructura de carpetas
-          mkdir -p src public dist
+      # PASO 2: Ahora que existe el package.json, configuramos Node
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-          # 3. HTML Base (solo si no existe)
-          if [ ! -f src/index.html ]; then
-            cat > src/index.html <<'HTML'
-          <!doctype html>
-          <html lang="es-AR">
-            <head>
-              <meta charset="UTF-8" />
-              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-              <title>Tailwind Starter</title>
-              <link href="./assets/app.css" rel="stylesheet" />
-            </head>
-            <body class="min-h-screen bg-slate-950 text-slate-50 flex items-center justify-center">
-              <main class="mx-auto max-w-3xl p-8 text-center">
-                <h1 class="text-5xl font-extrabold tracking-tight bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                  Tailwind Ready
-                </h1>
-                <p class="mt-4 text-slate-400 text-lg">
-                  Estructura inicializada correctamente.
-                </p>
-                <div class="mt-8 grid gap-4 text-left">
-                  <div class="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
-                    <code class="text-cyan-400 text-sm">src/index.html</code>
-                    <p class="text-slate-500 text-xs mt-1">Edita el contenido principal aquí.</p>
-                  </div>
-                </div>
-              </main>
-            </body>
-          </html>
-          HTML
-          fi
+      # PASO 3: Instalamos dependencias (ahora npm ya sabe qué hacer)
+      - name: Install Tailwind
+        run: npm install -D tailwindcss postcss autoprefixer
 
-          # 4. CSS Entry point
-          if [ ! -f src/styles.css ]; then
-            cat > src/styles.css <<'CSS'
-          @tailwind base;
-          @tailwind components;
-          @tailwind utilities;
-          CSS
-          fi
-
-          # 5. Gitkeep para carpeta public
-          touch public/.gitkeep
-
-      - name: Install Toolchain
-        shell: bash
+      # PASO 4: Crear carpetas y archivos base
+      - name: Scaffold Project
         run: |
-          set -euo pipefail
-          npm install -D tailwindcss postcss autoprefixer
+          mkdir -p src dist
+          [ -f src/styles.css ] || echo "@tailwind base; @tailwind components; @tailwind utilities;" > src/styles.css
+          [ -f tailwind.config.js ] || npx tailwindcss init -p
 
-      - name: Configure Tailwind & PostCSS
-        shell: bash
-        run: |
-          set -euo pipefail
-          
-          if [ ! -f tailwind.config.js ]; then
-            cat > tailwind.config.js <<'JS'
-          /** @type {import('tailwindcss').Config} */
-          export default {
-            content: ["./src/**/*.{html,js}"],
-            theme: { extend: {} },
-            plugins: [],
-          };
-          JS
-          fi
-
-          if [ ! -f postcss.config.js ]; then
-            cat > postcss.config.js <<'JS'
-          export default {
-            plugins: {
-              tailwindcss: {},
-              autoprefixer: {},
-            },
-          };
-          JS
-          fi
-
-      - name: Final Build Check
-        run: npm run build
-
-      - name: Setup Gitignore
-        shell: bash
-        run: |
-          if [ ! -f .gitignore ]; then
-            cat > .gitignore <<'TXT'
-          node_modules
-          dist
-          .DS_Store
-          *.log
-          TXT
-          fi
-
-      - name: Commit and Push
-        shell: bash
+      # PASO 5: Commit y Push de la base
+      - name: Push Initial Setup
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
           git add .
-          # Solo commitear si hay cambios para evitar errores
-          if git diff --staged --quiet; then
-            echo "Nada nuevo para commitear."
-          else
-            git commit -m "chore: bootstrap tailwind project structure"
-            git push origin HEAD
-          fi
+          git commit -m "chore: initial tailwind setup"
+          git push origin HEAD
