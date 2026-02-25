@@ -1,0 +1,117 @@
+name: Init Tailwind Static Site (v4)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Scaffold project (src, dist, html, css, gitignore)
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p src public dist/assets
+
+          # HTML base
+          if [ ! -f src/index.html ]; then
+            cat > src/index.html <<'HTML'
+          <!doctype html>
+          <html lang="es">
+            <head>
+              <meta charset="UTF-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+              <title>Tailwind Starter</title>
+              <link rel="stylesheet" href="./assets/app.css" />
+            </head>
+            <body class="min-h-screen bg-slate-950 text-slate-50">
+              <main class="mx-auto max-w-3xl p-8">
+                <h1 class="text-4xl font-bold">Tailwind Starter</h1>
+                <p class="mt-4 text-slate-300">Build listo en <code>/dist</code>.</p>
+              </main>
+            </body>
+          </html>
+          HTML
+          fi
+
+          # Tailwind v4 entry
+          if [ ! -f src/styles.css ]; then
+            echo '@import "tailwindcss";' > src/styles.css
+          fi
+
+          # Keep public folder
+          [ -f public/.gitkeep ] || : > public/.gitkeep
+
+          # .gitignore
+          cat > .gitignore <<'TXT'
+          node_modules
+          dist
+          .DS_Store
+          npm-debug.log*
+          yarn-debug.log*
+          yarn-error.log*
+          TXT
+
+      - name: Create package.json if missing
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ ! -f package.json ]; then
+            cat > package.json <<'JSON'
+          {
+            "name": "tailwind-project",
+            "version": "1.0.0",
+            "private": true,
+            "type": "module",
+            "scripts": {
+              "dev": "npx @tailwindcss/cli -i ./src/styles.css -o ./dist/assets/app.css --watch",
+              "build": "rm -rf dist && mkdir -p dist/assets && cp -R public/. dist/ 2>/dev/null || true && cp ./src/index.html ./dist/index.html && npx @tailwindcss/cli -i ./src/styles.css -o ./dist/assets/app.css --minify"
+            }
+          }
+          JSON
+          fi
+
+      - name: Install deps (Tailwind v4 + CLI)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install -D tailwindcss @tailwindcss/cli
+
+      - name: Build (sanity check)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run build
+          test -f dist/index.html
+          test -f dist/assets/app.css
+
+      - name: Commit and push (only if changes)
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: init tailwind v4 static site (dist ready)"
+          git push
