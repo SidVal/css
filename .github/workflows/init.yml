@@ -20,12 +20,17 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Scaffold project (src, dist, html, css, gitignore)
+      - name: Scaffold project (src, public, dist, html, css, gitignore)
         shell: bash
         run: |
           set -euo pipefail
 
           mkdir -p src public dist/assets
+
+          # Tailwind v4 entry
+          if [ ! -f src/styles.css ]; then
+            echo '@import "tailwindcss";' > src/styles.css
+          fi
 
           # HTML base
           if [ ! -f src/index.html ]; then
@@ -38,25 +43,17 @@ jobs:
               <title>Tailwind Starter</title>
               <link rel="stylesheet" href="./assets/app.css" />
             </head>
-            <body class="min-h-screen bg-slate-950 text-slate-50">
-              <main class="mx-auto max-w-3xl p-8">
-                <h1 class="text-4xl font-bold">Tailwind Starter</h1>
-                <p class="mt-4 text-slate-300">Build listo en <code>/dist</code>.</p>
-              </main>
+            <body class="bg-slate-900 text-white min-h-screen flex items-center justify-center">
+              <h1 class="text-4xl font-bold">Tailwind v4 OK</h1>
             </body>
           </html>
           HTML
           fi
 
-          # Tailwind v4 entry
-          if [ ! -f src/styles.css ]; then
-            echo '@import "tailwindcss";' > src/styles.css
-          fi
-
-          # Keep public folder
+          # keep public
           [ -f public/.gitkeep ] || : > public/.gitkeep
 
-          # .gitignore
+          # .gitignore (siempre lo dejamos así)
           cat > .gitignore <<'TXT'
           node_modules
           dist
@@ -86,6 +83,17 @@ jobs:
           JSON
           fi
 
+      - name: Remove node_modules from repo if tracked
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Si hay cualquier archivo trackeado dentro de node_modules, lo sacamos del index
+          if git ls-files | grep -q '^node_modules/'; then
+            echo "Removiendo node_modules del repo..."
+            git rm -r --cached node_modules || true
+          fi
+
       - name: Install deps (Tailwind v4 + CLI)
         shell: bash
         run: |
@@ -105,13 +113,14 @@ jobs:
         run: |
           set -euo pipefail
 
-          if git diff --quiet; then
+          git add -A
+
+          if git diff --cached --quiet; then
             echo "No changes to commit."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
           git commit -m "chore: init tailwind v4 static site (dist ready)"
           git push
