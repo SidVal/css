@@ -4,10 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tailwindcss -i ./src/styles.css -o ./dist/assets/app.css --watch",
-    "build": "tailwindcss -i ./src/styles.css -o ./dist/assets/app.css --minify"
+    "dev": "npx @tailwindcss/cli -i ./src/styles.css -o ./dist/assets/app.css --watch",
+    "build": "rm -rf dist && mkdir -p dist/assets && cp ./src/index.html ./dist/index.html && npx @tailwindcss/cli -i ./src/styles.css -o ./dist/assets/app.css --minify"
   },
   "devDependencies": {
+    "@tailwindcss/cli": "^4.2.1",
     "autoprefixer": "^10.4.24",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.2.1"
