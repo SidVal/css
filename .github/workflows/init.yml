@@ -83,6 +83,51 @@ jobs:
           JSON
           fi
 
+      - name: Patch package.json scripts for dist build
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('fs');
+
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          pkg.private = true;
+          pkg.type = pkg.type || 'module';
+
+          pkg.devDependencies = pkg.devDependencies || {};
+          pkg.devDependencies["@tailwindcss/cli"] = pkg.devDependencies["@tailwindcss/cli"] || "^4.2.1";
+
+          pkg.scripts = pkg.scripts || {};
+          pkg.scripts.dev = "npx @tailwindcss/cli -i ./src/styles.css -o ./dist/assets/app.css --watch";
+          pkg.scripts.build = "rm -rf dist && mkdir -p dist/assets && cp ./src/index.html ./dist/index.html && npx @tailwindcss/cli -i ./src/styles.css -o ./dist/assets/app.css --minify";
+
+          fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          NODE
+
+      - name: Ensure scripts in package.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('fs');
+
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          pkg.private = true;
+          pkg.type = pkg.type || 'module';
+          pkg.scripts = pkg.scripts || {};
+
+          pkg.scripts.dev = "npx @tailwindcss/cli -i ./src/styles.css -o ./dist/assets/app.css --watch";
+          pkg.scripts.build = "rm -rf dist && mkdir -p dist/assets && cp ./src/index.html ./dist/index.html && npx @tailwindcss/cli -i ./src/styles.css -o ./dist/assets/app.css --minify";
+
+          fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          NODE
+
+      - name: Install deps (Tailwind v4 + CLI)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install -D tailwindcss @tailwindcss/cli postcss autoprefixer
+
       - name: Remove node_modules from repo if tracked
         shell: bash
         run: |
@@ -93,12 +138,6 @@ jobs:
             echo "Removiendo node_modules del repo..."
             git rm -r --cached node_modules || true
           fi
-
-      - name: Install deps (Tailwind v4 + CLI)
-        shell: bash
-        run: |
-          set -euo pipefail
-          npm install -D tailwindcss @tailwindcss/cli
 
       - name: Build (sanity check)
         shell: bash
