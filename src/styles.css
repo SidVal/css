@@ -1,11 +1,1 @@
 @import "tailwindcss";
-
-h1 .prueba {
-    text-align: center;
-    border-bottom: 1px solid #333;
-    margin-top: 0;
-    margin-bottom: 40px;
-    padding-bottom: 5px;
-    font-family: Montserrat, sans-serif;
-    font-weight: 500;
-}
