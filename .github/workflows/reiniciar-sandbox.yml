@@ -1,0 +1,70 @@
+name: Reiniciar Sandbox
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Limpiar src y public
+        run: |
+          set -euo pipefail
+
+          rm -rf src
+          rm -rf public
+
+          mkdir -p src public dist/assets
+
+      - name: Recrear base mínima
+        run: |
+          set -euo pipefail
+
+          # Tailwind entry
+          echo '@import "tailwindcss";' > src/styles.css
+
+          # HTML base
+          cat > src/index.html <<'HTML'
+          <!doctype html>
+          <html lang="es">
+            <head>
+              <meta charset="UTF-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+              <title>Tailwind Sandbox Reset</title>
+              <link rel="stylesheet" href="./assets/app.css" />
+            </head>
+            <body class="bg-slate-900 text-white min-h-screen flex items-center justify-center">
+              <h1 class="text-4xl font-bold">Tailwind v4 OK</h1>
+            </body>
+          </html>
+          HTML
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Commit y Push
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+          git commit -m "chore: sandbox reset to clean state" || echo "No changes"
+          git push
