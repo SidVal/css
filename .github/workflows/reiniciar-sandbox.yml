@@ -36,6 +36,9 @@ jobs:
           # Tailwind entry
           echo '@import "tailwindcss";' > src/styles.css
 
+          # Excluir SEO-bots
+          echo -e "User-agent: *\nDisallow: /" > public/robots.txt
+
           # HTML base
           cat > src/index.html <<'HTML'
           <!doctype html>
