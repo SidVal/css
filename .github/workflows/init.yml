@@ -36,7 +36,7 @@ jobs:
           if [ ! -f src/index.html ]; then
             cat > src/index.html <<'HTML'
           <!doctype html>
-          <html lang="es">
+          <html lang="es-AR">
             <head>
               <meta charset="UTF-8" />
               <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -72,7 +72,7 @@ jobs:
             cat > package.json <<'JSON'
           {
             "name": "tailwind-project",
-            "version": "4.2.1",
+            "version": "1.0.0",
             "private": true,
             "type": "module",
             "scripts": {
