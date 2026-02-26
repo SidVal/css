@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "npx @tailwindcss/cli -i ./src/styles.css -o ./dist/assets/app.css --watch",
-    "build": "rm -rf dist && mkdir -p dist/assets && cp ./src/index.html ./dist/index.html && npx @tailwindcss/cli -i ./src/styles.css -o ./dist/assets/app.css --minify"
+    "build": "rm -rf dist && mkdir -p dist/assets && cp -R public/. dist/ 2>/dev/null || true && cp ./src/index.html ./dist/index.html && npx @tailwindcss/cli -i ./src/styles.css -o ./dist/assets/app.css --minify"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.2.1",
